@@ -143,6 +143,8 @@ table{border-collapse:collapse;width:100%;min-width:340px}
 .mrow .t small{color:var(--muted);font-size:12px}
 .mrow .num{font-size:13px;text-align:right}
 .mempty{padding:12px;color:var(--muted);font-size:13px}
+#seg2{background:var(--surface);border:1px solid var(--line)}
+#seg2 button[aria-pressed="true"]{background:var(--bg)}
 .muted{color:var(--muted)}
 th,td{padding:9px 10px;text-align:right;white-space:nowrap}
 th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line)}
@@ -191,9 +193,10 @@ td input{width:82px;padding:5px 7px;font:500 14px var(--mono);text-align:right}
 
   <section class="group" aria-label="Price reference">
     <div class="ref-head">
-      <div><h2>Price reference</h2><p class="sub">Tap a row to check it. Newest sets first.</p></div>
+      <div><h2>Price reference</h2><p class="sub" id="refsub">Tap a row to check it. Newest sets first.</p></div>
       <div style="display:flex;gap:6px"><button class="btn" id="reset" hidden>Reset my edits</button><button class="btn" id="edit" aria-pressed="false">Edit prices</button></div>
     </div>
+    <div class="seg" role="group" aria-label="Product type for the price table" id="seg2"></div>
     <div id="ref"><div class="empty">Loading prices…</div></div>
   </section>
 
@@ -221,7 +224,7 @@ const usd=v=>v==null||isNaN(v)?"—":"$"+Number(v).toLocaleString("en-US",{minim
 const usd0r=v=>v==null||isNaN(v)?"—":"$"+Math.round(v).toLocaleString("en-US");
 const usd0=v=>"$"+Math.abs(v).toLocaleString("en-US",{maximumFractionDigits:0});
 const pct=(a,b)=>(a-b)/b;
-const fmtPct=p=>(p>0?"+":p<0?"−":"")+Math.abs(p*100).toFixed(0)+"%";
+const fmtPct=p=>Math.abs(p)<0.005?"0%":(p>0?"+":"−")+Math.abs(p*100).toFixed(0)+"%";
 function chip(c,bare,label){if(c==null)return bare?'<span class="muted">—</span>':"";const t=c>=0.03?"up":c<=-0.03?"down":"flat";
   const txt=t==="up"?"▲ "+Math.abs(c*100).toFixed(0)+"%":t==="down"?"▼ "+Math.abs(c*100).toFixed(0)+"%":fmtPct(c);return `<span class="chip ${t}">${txt}${label?` <small>${label}</small>`:""}</span>`}
 const TLABEL={etb:"ETB",pcetb:"PC ETB",bundle:"Booster Bundle",box:"Booster Box"};
@@ -261,12 +264,12 @@ const num=v=>(v===""||v==null||isNaN(Number(v)))?null:Number(v);
 function byType(t){return S.products.filter(p=>p.type===t).sort((a,b)=>(b.order||0)-(a.order||0))}
 function current(){return S.products.find(p=>p.id===S.id)}
 
+function setType(k){S.type=k;const list=byType(k);const cur=current();
+  const same=cur&&list.find(p=>p.setSlug===cur.setSlug);S.id=same?same.id:(list[0]&&list[0].id);renderAll()}
 function renderSeg(){
-  $("seg").innerHTML="";
-  TYPES.forEach(t=>{const b=document.createElement("button");b.type="button";b.textContent=t.label;b.title=t.name;
-    b.setAttribute("aria-pressed",String(S.type===t.k));b.onclick=()=>{S.type=t.k;const list=byType(t.k);
-      const cur=current();const same=cur&&list.find(p=>p.setSlug===cur.setSlug);S.id=same?same.id:(list[0]&&list[0].id);renderAll()};
-    $("seg").appendChild(b)});
+  ["seg","seg2"].forEach(id=>{const box=$(id);box.innerHTML="";
+    TYPES.forEach(t=>{const b=document.createElement("button");b.type="button";b.textContent=t.label;b.title=t.name;
+      b.setAttribute("aria-pressed",String(S.type===t.k));b.onclick=()=>setType(t.k);box.appendChild(b)})});
 }
 function esc(t){return String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 function initials(n){const w=String(n).split(/\s+/);return (w.length>1?w[0][0]+w[1][0]:n.slice(0,2)).toUpperCase()}
@@ -329,9 +332,10 @@ function renderRef(){
   const ref=$("ref");
   if(!S.products.length){ref.innerHTML=`<div class="empty">Loading prices…</div>`;return}
   ref.innerHTML="";
-  TYPES.forEach(t=>{const list=byType(t.k);if(!list.length)return;
-    const g=document.createElement("div");g.className="group";g.style.marginTop="14px";
-    g.innerHTML=`<h2>${t.name}</h2>`;
+  [TYPES.find(t=>t.k===S.type)].forEach(t=>{const list=byType(t.k);
+    $("refsub").textContent=`${t.name} · ${list.length} sets. Tap a row to check it.`;
+    if(!list.length){ref.innerHTML='<div class="empty">No sets for this product type yet.</div>';return}
+    const g=document.createElement("div");
     const w=document.createElement("div");w.className="tbl";
     const rows=list.map(p=>{const m=p.market&&p.msrp?(p.market/p.msrp):null;
       const cell=(f)=>S.editing?`<input aria-label="${f} price for ${p.set}" data-id="${p.id}" data-f="${f}" type="number" inputmode="decimal" step="0.01" value="${p[f]??""}">`:usd0r(p[f]);
