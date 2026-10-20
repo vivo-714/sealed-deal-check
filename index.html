@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#151a2b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Deal Check">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Sealed Deal Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow column, phone first. A price-check card on top (the shelf tag), reference lists by product type below. */
+:root{
+  --bg:#f3f4f7; --surface:#ffffff; --ink:#151a2b; --muted:#5b6378; --line:#dde1ea;
+  --tag:#f5b301; --tag-ink:#2a1e00; --accent:#2747c9;
+  --good:#16794a; --good-bg:#dcf3e6; --fair:#5b6378; --fair-bg:#e8eaf0;
+  --warn:#a35a00; --warn-bg:#fdecd2; --bad:#b4232c; --bad-bg:#fbe0e1;
+  --bar-msrp:#9aa3b8; --bar-online:#7d93e8; --bar-market:#2747c9;
+  --display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body:"IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f1220; --surface:#181c2e; --ink:#eceef6; --muted:#9aa2b8; --line:#2a3048;
+  --tag:#f5b301; --tag-ink:#2a1e00; --accent:#8ea2ff;
+  --good:#5fd39a; --good-bg:#123326; --fair:#b3bad0; --fair-bg:#242a40;
+  --warn:#f3b05a; --warn-bg:#3a2810; --bad:#ff7b82; --bad-bg:#3d1519;
+  --bar-msrp:#5a6380; --bar-online:#5f74c9; --bar-market:#8ea2ff; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0f1220; --surface:#181c2e; --ink:#eceef6; --muted:#9aa2b8; --line:#2a3048;
+  --tag:#f5b301; --tag-ink:#2a1e00; --accent:#8ea2ff;
+  --good:#5fd39a; --good-bg:#123326; --fair:#b3bad0; --fair-bg:#242a40;
+  --warn:#f3b05a; --warn-bg:#3a2810; --bad:#ff7b82; --bad-bg:#3d1519;
+  --bar-msrp:#5a6380; --bar-online:#5f74c9; --bar-market:#8ea2ff; color-scheme:dark }
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body)}
+.wrap{max-width:720px;margin:0 auto;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:20px 48px;display:flex;flex-direction:column;gap:28px}
+h1,h2{font-family:var(--display);text-wrap:balance;margin:0}
+h1{font-size:30px;font-weight:800;letter-spacing:-.01em;line-height:1.1}
+h2{font-size:19px;font-weight:600}
+.sub{color:var(--muted);font-size:13px;margin:4px 0 0}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+/* checker */
+.check{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:16px}
+.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--bg);padding:4px;border-radius:10px}
+.seg button{font:600 12.5px/1.2 var(--body);border:0;border-radius:7px;padding:9px 4px;background:transparent;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.row2{display:grid;grid-template-columns:1fr 150px;gap:10px}
+@media (max-width:420px){.row2{grid-template-columns:1fr}}
+label.f{display:flex;flex-direction:column;gap:5px;min-width:0}
+select,input{font:500 16px var(--body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:10px 12px;width:100%;min-width:0}
+.money{position:relative}
+.money span{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-family:var(--mono)}
+.money input{padding-left:26px;font-family:var(--mono);font-size:20px;font-weight:600}
+select:focus-visible,input:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.verdict{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.pill{font:800 18px/1 var(--display);padding:10px 14px;border-radius:8px;position:relative}
+.pill.good{background:var(--good-bg);color:var(--good)} .pill.fair{background:var(--fair-bg);color:var(--fair)}
+.pill.warn{background:var(--warn-bg);color:var(--warn)} .pill.bad{background:var(--bad-bg);color:var(--bad)}
+.vmsg{color:var(--muted);font-size:14px;flex:1;min-width:180px}
+
+.cmp{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.cmp div{background:var(--bg);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.cmp b{font:600 18px var(--mono);font-variant-numeric:tabular-nums}
+.cmp small{color:var(--muted);font-size:12px}
+.up{color:var(--bad)} .down{color:var(--good)}
+
+.bars{display:flex;flex-direction:column;gap:7px;position:relative}
+.bar{display:grid;grid-template-columns:62px 1fr 64px;align-items:center;gap:8px;font-size:12.5px}
+.bar .track{height:12px;border-radius:3px;background:var(--bg);position:relative;overflow:visible}
+.bar .fill{height:100%;border-radius:3px}
+.bar .v{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.bar.you .fill{background:var(--tag)}
+.youline{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--tag);pointer-events:none}
+.note{font-size:12px;color:var(--muted)}
+
+/* reference */
+.ref-head{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap}
+.btn{font:600 13px var(--body);border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:8px 12px;cursor:pointer}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.group{display:flex;flex-direction:column;gap:8px}
+.tbl{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;min-width:430px}
+th,td{padding:9px 10px;text-align:right;white-space:nowrap}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left;white-space:normal}
+tbody tr{border-top:1px solid var(--line);cursor:pointer}
+tbody tr:first-child{border-top:0}
+tbody tr:hover{background:var(--bg)}
+tbody tr.sel{box-shadow:inset 3px 0 0 var(--tag)}
+td .set{font-weight:600} td .rel{display:block;font-size:12px;color:var(--muted)}
+td.mult{font-weight:600}
+td input{width:82px;padding:5px 7px;font:500 14px var(--mono);text-align:right}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:20px;color:var(--muted)}
+.foot{font-size:12.5px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+.foot a{color:var(--accent)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom, 0px));background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:8px;font-size:13px}
+@media (prefers-reduced-motion:no-preference){.bar .fill,.youline{transition:width .25s ease,left .25s ease}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Sealed Deal Check</h1>
+    <p class="sub" id="asof">Pokémon sealed prices · loading…</p>
+  </header>
+
+  <section class="check" aria-label="Check a price">
+    <div class="seg" role="group" aria-label="Product type" id="seg"></div>
+    <div class="row2">
+      <label class="f"><span class="eyebrow">Set</span><select id="set"></select></label>
+      <label class="f"><span class="eyebrow">Price you see</span>
+        <div class="money"><span>$</span><input id="price" type="number" inputmode="decimal" min="0" step="0.01" value="145"></div></label>
+    </div>
+    <div class="verdict"><div class="pill fair" id="pill">—</div><div class="vmsg" id="vmsg">Pick a product to compare.</div></div>
+    <div class="cmp" id="cmp"></div>
+    <div class="bars" id="bars"></div>
+    <p class="note">Include shipping and tax in the price for online listings. Verdict compares against Market (recent sold average).</p>
+  </section>
+
+  <section class="group" aria-label="Price reference">
+    <div class="ref-head">
+      <div><h2>Price reference</h2><p class="sub">Tap a row to check it. Newest sets first.</p></div>
+      <div style="display:flex;gap:6px"><button class="btn" id="reset" hidden>Reset my edits</button><button class="btn" id="edit" aria-pressed="false">Edit prices</button></div>
+    </div>
+    <div id="ref"><div class="empty">Loading prices…</div></div>
+  </section>
+
+  <footer class="foot">
+    <span><b>MSRP</b>: official US retail price (Pokémon Center, Target, Walmart). Scarlet &amp; Violet sets use the older pack price; Mega Evolution sets use the late-2025 increase.</span>
+    <span><b>Online</b>: current TCGplayer price, roughly what you'd pay buying online today. <b>Market</b>: PriceCharting's recent sold average for sealed copies.</span>
+    <span><b>× MSRP</b>: how many times MSRP the market price is. Sealed prices move weekly. Edit prices saves your changes on this device only; Reset my edits goes back to the published prices.</span>
+    <span>Sources: <a href="https://www.pricecharting.com/category/pokemon-cards" target="_blank" rel="noopener">PriceCharting</a> · <a href="https://www.tcgplayer.com" target="_blank" rel="noopener">TCGplayer</a> · <a href="https://bujusjujus.com/guides/pokemon-tcg-msrp-reference" target="_blank" rel="noopener">MSRP reference</a></span>
+  </footer>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const TYPES=[{k:"etb",label:"ETB",name:"Elite Trainer Box"},{k:"pcetb",label:"PC ETB",name:"Pokémon Center ETB"},{k:"bundle",label:"Bundle",name:"Booster Bundle (6 packs)"},{k:"box",label:"Box",name:"Booster Box (36 packs)"}];
+const S={products:[],type:"etb",id:"ascended-heroes__etb",editing:false,db:null,canWrite:true,asOf:null};
+const $=id=>document.getElementById(id);
+const usd=v=>v==null||isNaN(v)?"—":"$"+Number(v).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const usd0=v=>"$"+Math.abs(v).toLocaleString("en-US",{maximumFractionDigits:0});
+const pct=(a,b)=>(a-b)/b;
+const fmtPct=p=>(p>0?"+":p<0?"−":"")+Math.abs(p*100).toFixed(0)+"%";
+const num=v=>(v===""||v==null||isNaN(Number(v)))?null:Number(v);
+
+function byType(t){return S.products.filter(p=>p.type===t).sort((a,b)=>(b.order||0)-(a.order||0))}
+function current(){return S.products.find(p=>p.id===S.id)}
+
+function renderSeg(){
+  $("seg").innerHTML="";
+  TYPES.forEach(t=>{const b=document.createElement("button");b.type="button";b.textContent=t.label;b.title=t.name;
+    b.setAttribute("aria-pressed",String(S.type===t.k));b.onclick=()=>{S.type=t.k;const list=byType(t.k);
+      const cur=current();const same=cur&&list.find(p=>p.setSlug===cur.setSlug);S.id=same?same.id:(list[0]&&list[0].id);renderAll()};
+    $("seg").appendChild(b)});
+}
+function renderSelect(){
+  const sel=$("set");const list=byType(S.type);sel.innerHTML="";
+  list.forEach(p=>{const o=document.createElement("option");o.value=p.id;o.textContent=p.set+" · "+p.released;sel.appendChild(o)});
+  if(list.length&&!list.find(p=>p.id===S.id))S.id=list[0].id;
+  sel.value=S.id||"";sel.disabled=!list.length;
+}
+function renderCheck(){
+  const p=current();const price=num($("price").value);const pill=$("pill"),msg=$("vmsg");
+  $("cmp").innerHTML="";$("bars").innerHTML="";
+  if(!p){pill.className="pill fair";pill.textContent="—";msg.textContent=S.products.length?"No product of this type for that set.":"Waiting for the price list.";return}
+  const ref=p.market??p.online;
+  if(price==null||price<=0){pill.className="pill fair";pill.textContent="Enter a price";msg.textContent=`${p.set} ${typeName(p.type)} · Market ${usd(p.market)}`;}
+  else{
+    let cls,label,text;
+    const dRef=ref?price-ref:null;
+    if(p.msrp&&price<=p.msrp*1.05){cls="good";label="Retail price";text=`At or near MSRP (${usd(p.msrp)}). Grab it if you want it${ref?`; market is ${usd0(ref)}.`:"."}`}
+    else if(ref==null){cls="fair";label="No market data";text=`${fmtPct(pct(price,p.msrp))} vs MSRP.`}
+    else{const d=pct(price,ref);
+      if(d<=-0.10){cls="good";label="Good deal"}else if(d<=0.05){cls="fair";label="Fair price"}else if(d<=0.20){cls="warn";label="Above market"}else{cls="bad";label="Overpriced"}
+      text=`${usd0(dRef)} ${dRef<0?"under":"over"} market (${fmtPct(d)}). That's ${Math.round(pct(price,p.msrp)*100)}% ${price>=p.msrp?"over":"under"} MSRP.`}
+    pill.className="pill "+cls;pill.textContent=label;msg.textContent=text;
+    [["vs MSRP",p.msrp],["vs Online",p.online],["vs Market",p.market]].forEach(([l,v])=>{
+      const d=document.createElement("div");
+      if(v){const q=pct(price,v);d.innerHTML=`<small>${l}</small><b class="${q>0?"up":q<0?"down":""}">${fmtPct(q)}</b><small class="num">${usd(v)}</small>`}
+      else d.innerHTML=`<small>${l}</small><b>—</b><small>no data</small>`;
+      $("cmp").appendChild(d)});
+  }
+  const vals=[["MSRP",p.msrp,"var(--bar-msrp)"],["Online",p.online,"var(--bar-online)"],["Market",p.market,"var(--bar-market)"]];
+  const max=Math.max(...vals.map(v=>v[1]||0),price||0)*1.06||1;
+  const box=$("bars");
+  vals.concat(price>0?[["You",price,"var(--tag)"]]:[]).forEach(([l,v,c])=>{
+    const r=document.createElement("div");r.className="bar"+(l==="You"?" you":"");
+    r.innerHTML=`<span>${l}</span><div class="track"><div class="fill" style="width:${v?(v/max*100).toFixed(1):0}%;background:${c}"></div></div><span class="v">${usd(v)}</span>`;
+    box.appendChild(r)});
+  if(price>0){requestAnimationFrame(()=>{const tr=box.querySelector(".track");if(!tr)return;const line=document.createElement("div");line.className="youline";
+    line.style.left=(tr.offsetLeft+tr.offsetWidth*price/max-1)+"px";box.appendChild(line)})}
+}
+function typeName(k){return (TYPES.find(t=>t.k===k)||{}).name||k}
+function renderRef(){
+  const ref=$("ref");
+  if(!S.products.length){ref.innerHTML=`<div class="empty">Loading prices…</div>`;return}
+  ref.innerHTML="";
+  TYPES.forEach(t=>{const list=byType(t.k);if(!list.length)return;
+    const g=document.createElement("div");g.className="group";g.style.marginTop="14px";
+    g.innerHTML=`<h2>${t.name}</h2>`;
+    const w=document.createElement("div");w.className="tbl";
+    const rows=list.map(p=>{const m=p.market&&p.msrp?(p.market/p.msrp):null;
+      const cell=(f)=>S.editing?`<input aria-label="${f} price for ${p.set}" data-id="${p.id}" data-f="${f}" type="number" inputmode="decimal" step="0.01" value="${p[f]??""}">`:usd(p[f]);
+      return `<tr data-id="${p.id}" class="${p.id===S.id?"sel":""}"><td><span class="set">${p.set}</span><span class="rel">${p.released}${p.note?" · "+p.note:""}</span></td>
+        <td class="num">${usd(p.msrp)}</td><td class="num">${cell("online")}</td><td class="num">${cell("market")}</td><td class="num mult">${m?m.toFixed(1)+"×":"—"}</td></tr>`}).join("");
+    w.innerHTML=`<table><thead><tr><th>Set</th><th>MSRP</th><th>Online</th><th>Market</th><th>× MSRP</th></tr></thead><tbody>${rows}</tbody></table>`;
+    g.appendChild(w);ref.appendChild(g)});
+  ref.querySelectorAll("tbody tr").forEach(tr=>tr.addEventListener("click",e=>{if(e.target.tagName==="INPUT")return;
+    const p=S.products.find(x=>x.id===tr.dataset.id);if(!p)return;S.type=p.type;S.id=p.id;renderAll();
+    document.querySelector(".check").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});$("price").focus({preventScroll:true})}));
+  ref.querySelectorAll("td input").forEach(inp=>inp.addEventListener("change",()=>save(inp)));
+}
+const LS="sdc-overrides";
+function loadOv(){try{return JSON.parse(localStorage.getItem(LS)||"{}")}catch(e){return {}}}
+function saveOv(o){try{localStorage.setItem(LS,JSON.stringify(o));return true}catch(e){return false}}
+let BASE=[];
+function applyOv(){const o=loadOv();S.products=BASE.map(p=>Object.assign({},p,o[p.id]||{}));$("reset").hidden=!Object.keys(o).length}
+function save(inp){const o=loadOv();const id=inp.dataset.id;o[id]=Object.assign({},o[id],{[inp.dataset.f]:num(inp.value),updated:new Date().toISOString().slice(0,10)});
+  if(saveOv(o)){applyOv();renderCheck();toast("Saved on this device")}else toast("Couldn't save. Your browser is blocking storage.")}
+let tt;function toast(t){const el=$("toast");el.textContent=t;el.hidden=false;clearTimeout(tt);tt=setTimeout(()=>el.hidden=true,1800)}
+function renderAll(){renderSeg();renderSelect();renderCheck();renderRef()}
+
+$("set").addEventListener("change",e=>{S.id=e.target.value;renderCheck();renderRef()});
+$("price").addEventListener("input",renderCheck);
+$("edit").addEventListener("click",()=>{S.editing=!S.editing;$("edit").setAttribute("aria-pressed",String(S.editing));$("edit").textContent=S.editing?"Done":"Edit prices";renderRef()});
+window.addEventListener("resize",()=>renderCheck());
+renderAll();
+
+$("reset").addEventListener("click",()=>{saveOv({});applyOv();renderAll();toast("Back to published prices")});
+fetch("prices.json",{cache:"no-cache"}).then(r=>r.json()).then(d=>{BASE=d.products||[];applyOv();
+  $("asof").textContent="Pokémon sealed prices · as of "+new Date(d.asOf+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});renderAll()})
+ .catch(()=>{$("asof").textContent="Pokémon sealed prices";$("ref").innerHTML='<div class="empty">Prices couldn\'t load. Check your connection and reopen the app.</div>'});
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
