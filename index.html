@@ -41,6 +41,7 @@
   --bar-msrp:#5a6380; --bar-online:#5f74c9; --bar-market:#8ea2ff; color-scheme:dark }
 
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0}
@@ -61,7 +62,32 @@ h2{font-size:19px;font-weight:600}
 .seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
 .row2{display:grid;grid-template-columns:1fr 150px;gap:10px}
 @media (max-width:420px){.row2{grid-template-columns:1fr}}
-label.f{display:flex;flex-direction:column;gap:5px;min-width:0}
+label.f,div.f{display:flex;flex-direction:column;gap:5px;min-width:0}
+.bdg{position:relative;display:inline-grid;place-items:center;flex:none;width:40px;height:40px;border-radius:22%;overflow:hidden;background:var(--fair-bg);color:var(--muted);font:700 13px var(--body)}
+.bdg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.bdg.sm{width:28px;height:28px;font-size:10px}
+.pick{display:flex;align-items:center;gap:10px;width:100%;min-width:0;text-align:left;font:500 16px var(--body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:6px 10px 6px 6px;cursor:pointer}
+.pick .t{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.pick .t b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pick .t small{color:var(--muted);font-size:12px}
+.pick svg{flex:none;color:var(--muted)}
+.sheet{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet-bd{position:absolute;inset:0;background:rgba(8,10,20,.55)}
+.sheet-panel{position:relative;width:100%;max-width:520px;max-height:min(78vh,640px);display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:16px 16px 0 0;padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (min-width:600px){.sheet{align-items:center}.sheet-panel{border-radius:16px}}
+.sheet-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 10px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.sheet-head b{font:600 17px var(--display)}
+.x{border:0;background:var(--bg);color:var(--ink);width:32px;height:32px;border-radius:50%;font-size:15px;cursor:pointer}
+.opts{list-style:none;margin:0;padding:0 0 8px;overflow-y:auto}
+.opt{display:flex;align-items:center;gap:12px;padding:9px 16px;cursor:pointer;border-top:1px solid var(--line)}
+.opt:first-child{border-top:0}
+.opt:hover,.opt.focus{background:var(--bg)}
+.opt[aria-selected="true"]{box-shadow:inset 3px 0 0 var(--tag)}
+.opt .t{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.opt .t b{font-weight:600} .opt .t small{color:var(--muted);font-size:12px}
+.opt .m{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:13.5px;text-align:right}
+.opt .m small{display:block;color:var(--muted);font-family:var(--body);font-size:11px}
+td .cell{display:flex;align-items:center;gap:10px}
 select,input{font:500 16px var(--body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:10px 12px;width:100%;min-width:0}
 .money{position:relative}
 .money span{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-family:var(--mono)}
@@ -103,7 +129,7 @@ tbody tr{border-top:1px solid var(--line);cursor:pointer}
 tbody tr:first-child{border-top:0}
 tbody tr:hover{background:var(--bg)}
 tbody tr.sel{box-shadow:inset 3px 0 0 var(--tag)}
-td .set{font-weight:600} td .rel{display:block;font-size:12px;color:var(--muted)}
+td .set{font-weight:600;display:block} td .rel{display:block;font-size:12px;color:var(--muted)}
 td.mult{font-weight:600}
 td input{width:82px;padding:5px 7px;font:500 14px var(--mono);text-align:right}
 .empty{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:20px;color:var(--muted)}
@@ -124,7 +150,7 @@ td input{width:82px;padding:5px 7px;font:500 14px var(--mono);text-align:right}
   <section class="check" aria-label="Check a price">
     <div class="seg" role="group" aria-label="Product type" id="seg"></div>
     <div class="row2">
-      <label class="f"><span class="eyebrow">Set</span><select id="set"></select></label>
+      <div class="f"><span class="eyebrow" id="setlbl">Set</span><button type="button" id="setbtn" class="pick" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="setlbl setbtn"></button></div>
       <label class="f"><span class="eyebrow">Asking price</span>
         <div class="money"><span>$</span><input id="price" type="number" inputmode="decimal" min="0" step="0.01" value="145"></div></label>
     </div>
@@ -150,6 +176,13 @@ td input{width:82px;padding:5px 7px;font:500 14px var(--mono);text-align:right}
   </footer>
 </div>
 <div class="toast" id="toast" hidden></div>
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet-bd" data-close></div>
+  <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sheettitle">
+    <div class="sheet-head"><b id="sheettitle">Choose a set</b><button type="button" class="x" data-close aria-label="Close">✕</button></div>
+    <ul class="opts" id="opts" role="listbox" aria-labelledby="sheettitle"></ul>
+  </div>
+</div>
 
 <script>
 const TYPES=[{k:"etb",label:"ETB",name:"Elite Trainer Box"},{k:"pcetb",label:"PC ETB",name:"Pokémon Center ETB"},{k:"bundle",label:"Bundle",name:"Booster Bundle (6 packs)"},{k:"box",label:"Box",name:"Booster Box (36 packs)"}];
@@ -171,12 +204,30 @@ function renderSeg(){
       const cur=current();const same=cur&&list.find(p=>p.setSlug===cur.setSlug);S.id=same?same.id:(list[0]&&list[0].id);renderAll()};
     $("seg").appendChild(b)});
 }
+function esc(t){return String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function initials(n){const w=String(n).split(/\s+/);return (w.length>1?w[0][0]+w[1][0]:n.slice(0,2)).toUpperCase()}
+function badge(p,cls){return `<span class="bdg ${cls||""}" aria-hidden="true">${esc(initials(p.set))}<img src="badges/${esc(p.setSlug)}.png" alt="" loading="lazy" onerror="this.remove()"></span>`}
+const CHEV='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
 function renderSelect(){
-  const sel=$("set");const list=byType(S.type);sel.innerHTML="";
-  list.forEach(p=>{const o=document.createElement("option");o.value=p.id;o.textContent=p.set+" · "+p.released;sel.appendChild(o)});
+  const list=byType(S.type);
   if(list.length&&!list.find(p=>p.id===S.id))S.id=list[0].id;
-  sel.value=S.id||"";sel.disabled=!list.length;
+  const p=current();const btn=$("setbtn");btn.disabled=!list.length;
+  btn.innerHTML=p?`${badge(p)}<span class="t"><b>${esc(p.set)}</b><small>${esc(p.released)}</small></span>${CHEV}`:`<span class="t"><b>No sets</b></span>`;
+  if(!$("sheet").hidden)renderOpts();
 }
+let focusIdx=0;
+function renderOpts(){
+  const list=byType(S.type);const ul=$("opts");
+  $("sheettitle").textContent="Choose a set · "+typeName(S.type);
+  ul.innerHTML=list.map((p,i)=>`<li class="opt${i===focusIdx?" focus":""}" role="option" id="opt-${i}" data-id="${esc(p.id)}" aria-selected="${p.id===S.id}">${badge(p)}<span class="t"><b>${esc(p.set)}</b><small>${esc(p.released)}</small></span><span class="m">${usd(p.market)}<small>market</small></span></li>`).join("");
+  ul.setAttribute("aria-activedescendant","opt-"+focusIdx);
+  ul.querySelectorAll(".opt").forEach(li=>li.addEventListener("click",()=>pick(li.dataset.id)));
+}
+function openSheet(){const list=byType(S.type);focusIdx=Math.max(0,list.findIndex(p=>p.id===S.id));
+  $("sheet").hidden=false;$("setbtn").setAttribute("aria-expanded","true");renderOpts();$("opts").tabIndex=0;$("opts").focus();
+  const el=$("opt-"+focusIdx);if(el)el.scrollIntoView({block:"nearest"})}
+function closeSheet(){$("sheet").hidden=true;$("setbtn").setAttribute("aria-expanded","false");$("setbtn").focus()}
+function pick(id){S.id=id;closeSheet();renderSelect();renderCheck();renderRef()}
 function renderCheck(){
   const p=current();const price=num($("price").value);const pill=$("pill"),msg=$("vmsg");
   $("cmp").innerHTML="";$("bars").innerHTML="";
@@ -219,7 +270,7 @@ function renderRef(){
     const w=document.createElement("div");w.className="tbl";
     const rows=list.map(p=>{const m=p.market&&p.msrp?(p.market/p.msrp):null;
       const cell=(f)=>S.editing?`<input aria-label="${f} price for ${p.set}" data-id="${p.id}" data-f="${f}" type="number" inputmode="decimal" step="0.01" value="${p[f]??""}">`:usd(p[f]);
-      return `<tr data-id="${p.id}" class="${p.id===S.id?"sel":""}"><td><span class="set">${p.set}</span><span class="rel">${p.released}${p.note?" · "+p.note:""}</span></td>
+      return `<tr data-id="${p.id}" class="${p.id===S.id?"sel":""}"><td><div class="cell">${badge(p,"sm")}<div><span class="set">${p.set}</span><span class="rel">${p.released}${p.note?" · "+p.note:""}</span></div></div></td>
         <td class="num">${usd(p.msrp)}</td><td class="num">${cell("online")}</td><td class="num">${cell("market")}</td><td class="num mult">${m?m.toFixed(1)+"×":"—"}</td></tr>`}).join("");
     w.innerHTML=`<table><thead><tr><th>Set</th><th>MSRP</th><th>Online</th><th>Market</th><th>× MSRP</th></tr></thead><tbody>${rows}</tbody></table>`;
     g.appendChild(w);ref.appendChild(g)});
@@ -238,7 +289,12 @@ function save(inp){const o=loadOv();const id=inp.dataset.id;o[id]=Object.assign(
 let tt;function toast(t){const el=$("toast");el.textContent=t;el.hidden=false;clearTimeout(tt);tt=setTimeout(()=>el.hidden=true,1800)}
 function renderAll(){renderSeg();renderSelect();renderCheck();renderRef()}
 
-$("set").addEventListener("change",e=>{S.id=e.target.value;renderCheck();renderRef()});
+$("setbtn").addEventListener("click",openSheet);
+$("sheet").addEventListener("click",e=>{if(e.target.closest("[data-close]"))closeSheet()});
+document.addEventListener("keydown",e=>{if($("sheet").hidden)return;const n=byType(S.type).length;
+  if(e.key==="Escape"){e.preventDefault();closeSheet()}
+  else if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();focusIdx=(focusIdx+(e.key==="ArrowDown"?1:n-1))%n;renderOpts();const el=$("opt-"+focusIdx);if(el)el.scrollIntoView({block:"nearest"})}
+  else if(e.key==="Enter"||e.key===" "){const li=$("opt-"+focusIdx);if(li){e.preventDefault();pick(li.dataset.id)}}});
 $("price").addEventListener("input",renderCheck);
 $("edit").addEventListener("click",()=>{S.editing=!S.editing;$("edit").setAttribute("aria-pressed",String(S.editing));$("edit").textContent=S.editing?"Done":"Edit prices";renderRef()});
 window.addEventListener("resize",()=>renderCheck());
