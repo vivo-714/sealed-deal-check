@@ -1,6 +1,6 @@
-# Flipr
+# Rip or Skip
 
-The live TCG price index, from MSRP to market.
+MSRP to market, live.
 
 A small phone app for checking Pokémon sealed product prices (ETB, Pokémon Center ETB, Booster Bundle, Booster Box) against MSRP, current online price (TCGplayer) and market price (PriceCharting recent sold average).
 

@@ -1,7 +1,7 @@
 {
-  "name": "Flipr",
-  "short_name": "Flipr",
-  "description": "The live TCG price index, from MSRP to market.",
+  "name": "Rip or Skip",
+  "short_name": "Rip or Skip",
+  "description": "MSRP to market, live.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
