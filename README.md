@@ -1,4 +1,6 @@
-# Sealed Deal Check
+# Flipr
+
+The live TCG price index, from MSRP to market.
 
 A small phone app for checking Pokémon sealed product prices (ETB, Pokémon Center ETB, Booster Bundle, Booster Box) against MSRP, current online price (TCGplayer) and market price (PriceCharting recent sold average).
 

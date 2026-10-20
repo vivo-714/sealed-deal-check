@@ -7,11 +7,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Deal Check">
+<meta name="apple-mobile-web-app-title" content="Flipr">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
-<title>Sealed Deal Check</title>
+<title>Flipr</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
@@ -50,6 +50,7 @@ h1,h2{font-family:var(--display);text-wrap:balance;margin:0}
 h1{font-size:30px;font-weight:800;letter-spacing:-.01em;line-height:1.1}
 h2{font-size:19px;font-weight:600}
 .sub{color:var(--muted);font-size:13px;margin:4px 0 0}
+.tagline{font-size:16px;font-weight:500;margin:6px 0 0;text-wrap:balance}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
 
@@ -115,7 +116,8 @@ td input{width:82px;padding:5px 7px;font:500 14px var(--mono);text-align:right}
 <body>
 <div class="wrap">
   <header>
-    <h1>Sealed Deal Check</h1>
+    <h1>Flipr</h1>
+    <p class="tagline">The live TCG price index, from MSRP to market</p>
     <p class="sub" id="asof">Pokémon sealed prices · loading…</p>
   </header>
 

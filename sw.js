@@ -1,5 +1,5 @@
 // Offline support: app files come from cache; prices.json is fetched fresh when online, cached copy when offline.
-const CACHE = "sdc-v1";
+const CACHE = "sdc-v2";
 const FILES = ["./", "index.html", "prices.json", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener("activate", e => {
