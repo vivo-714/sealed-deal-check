@@ -121,7 +121,29 @@ select:focus-visible,input:focus-visible,button:focus-visible{outline:2px solid 
 .btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .group{display:flex;flex-direction:column;gap:8px}
 .tbl{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px}
-table{border-collapse:collapse;width:100%;min-width:430px}
+table{border-collapse:collapse;width:100%;min-width:340px}
+@media (max-width:480px){th,td{padding:8px 5px}th:first-child,td:first-child{padding-left:10px}th:last-child,td:last-child{padding-right:10px}td{font-size:13.5px}td .set{font-size:14px}td .cell{gap:7px}.tbl .chip{padding:3px 5px;font-size:11.5px}.tbl .bdg.sm{width:24px;height:24px}.tbl .xm{display:none}.tbl th{font-size:10px;letter-spacing:.02em;padding-inline:4px}.tbl td{padding-inline:4px}.tbl .chip{gap:2px}}
+.chip{display:inline-flex;align-items:center;gap:4px;font:600 12.5px var(--mono);font-variant-numeric:tabular-nums;padding:4px 8px;border-radius:6px;white-space:nowrap}
+.chip.up{background:var(--good-bg);color:var(--good)} .chip.down{background:var(--bad-bg);color:var(--bad)} .chip.flat{background:var(--fair-bg);color:var(--fair)}
+.chip small{font:500 11px var(--body);opacity:.8}
+.trend{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.trend .tmsg{font-size:13px;color:var(--muted);flex:1 1 200px;min-width:0}
+.spark{display:flex;flex-direction:column;gap:4px}
+.spark .sh{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted)}
+.spark svg{display:block;width:100%;height:64px;overflow:visible}
+.movers{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:560px){.movers{grid-template-columns:1fr}}
+.mcol{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;min-width:0}
+.mcol h3{margin:0;padding:10px 12px;font:600 13px var(--body);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--line)}
+.mrow{display:flex;align-items:center;gap:10px;padding:9px 12px;border-top:1px solid var(--line);cursor:pointer;width:100%;background:none;border-left:0;border-right:0;border-bottom:0;color:var(--ink);font:inherit;text-align:left}
+.mcol h3+.mrow{border-top:0}
+.mrow:hover{background:var(--bg)}
+.mrow .t{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.mrow .t b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mrow .t small{color:var(--muted);font-size:12px}
+.mrow .num{font-size:13px;text-align:right}
+.mempty{padding:12px;color:var(--muted);font-size:13px}
+.muted{color:var(--muted)}
 th,td{padding:9px 10px;text-align:right;white-space:nowrap}
 th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line)}
 th:first-child,td:first-child{text-align:left;white-space:normal}
@@ -156,8 +178,15 @@ td input{width:82px;padding:5px 7px;font:500 14px var(--mono);text-align:right}
     </div>
     <div class="verdict"><div class="pill fair" id="pill">—</div><div class="vmsg" id="vmsg">Pick a product to compare.</div></div>
     <div class="cmp" id="cmp"></div>
+    <div class="trend" id="trend"></div>
     <div class="bars" id="bars"></div>
+    <div class="spark" id="spark"></div>
     <p class="note">Include shipping and tax in the price for online listings. Verdict compares against Market (recent sold average).</p>
+  </section>
+
+  <section class="group" aria-label="Movers">
+    <div><h2>Movers · last 30 days</h2><p class="sub">Biggest market price changes across every set and product type. Tap one to check it.</p></div>
+    <div class="movers" id="movers"><div class="mempty">Loading…</div></div>
   </section>
 
   <section class="group" aria-label="Price reference">
@@ -189,9 +218,44 @@ const TYPES=[{k:"etb",label:"ETB",name:"Elite Trainer Box"},{k:"pcetb",label:"PC
 const S={products:[],type:"etb",id:"ascended-heroes__etb",editing:false,db:null,canWrite:true,asOf:null};
 const $=id=>document.getElementById(id);
 const usd=v=>v==null||isNaN(v)?"—":"$"+Number(v).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const usd0r=v=>v==null||isNaN(v)?"—":"$"+Math.round(v).toLocaleString("en-US");
 const usd0=v=>"$"+Math.abs(v).toLocaleString("en-US",{maximumFractionDigits:0});
 const pct=(a,b)=>(a-b)/b;
 const fmtPct=p=>(p>0?"+":p<0?"−":"")+Math.abs(p*100).toFixed(0)+"%";
+function chip(c,bare,label){if(c==null)return bare?'<span class="muted">—</span>':"";const t=c>=0.03?"up":c<=-0.03?"down":"flat";
+  const txt=t==="up"?"▲ "+Math.abs(c*100).toFixed(0)+"%":t==="down"?"▼ "+Math.abs(c*100).toFixed(0)+"%":fmtPct(c);return `<span class="chip ${t}">${txt}${label?` <small>${label}</small>`:""}</span>`}
+const TLABEL={etb:"ETB",pcetb:"PC ETB",bundle:"Booster Bundle",box:"Booster Box"};
+function renderTrend(p){
+  const el=$("trend"),sp=$("spark");const t=p&&p.trend;
+  if(!t||(t.c30==null&&t.c90==null)){el.innerHTML=p?'<span class="tmsg">Not enough recent sales to show a trend yet.</span>':"";sp.innerHTML="";}
+  else{const c=t.c30!=null?t.c30:t.c90;
+    const msg=c<=-0.08?"Prices are falling. Waiting a few weeks could get you a better price.":c>=0.08?"Prices are climbing. A fair price today may cost more later.":"Prices are holding steady.";
+    el.innerHTML=`${chip(t.c30,false,"30d")}${chip(t.c90,false,"90d")}<span class="tmsg">${msg}</span>`;}
+  const pts=(t&&t.spark||[]).map((v,i)=>[i,v]).filter(x=>x[1]!=null);
+  if(pts.length<2){sp.innerHTML="";return}
+  const W=300,H=56,vals=pts.map(x=>x[1]),lo=Math.min(...vals),hi=Math.max(...vals),pad=(hi-lo)*0.12||1;
+  const X=i=>(i/12)*W,Y=v=>H-((v-(lo-pad))/((hi+pad)-(lo-pad)))*H;
+  const line=pts.map(([i,v])=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
+  const first=pts[0],last=pts[pts.length-1];const dir=last[1]>=first[1]?"var(--good)":"var(--bad)";
+  sp.innerHTML=`<div class="sh"><span>Market price · last 13 weeks</span><span class="num">${usd(lo)} – ${usd(hi)}</span></div>
+  <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Market price trend from ${usd(first[1])} to ${usd(last[1])}">
+    <line x1="0" x2="${W}" y1="${H}" y2="${H}" stroke="var(--line)" stroke-width="1"/>
+    <polygon points="${X(first[0]).toFixed(1)},${H} ${line} ${X(last[0]).toFixed(1)},${H}" fill="${dir}" fill-opacity="0.12"/>
+    <polyline points="${line}" fill="none" stroke="${dir}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+    <circle cx="${X(last[0]).toFixed(1)}" cy="${Y(last[1]).toFixed(1)}" r="3.5" fill="${dir}"/>
+  </svg>`;
+}
+function renderMovers(){
+  const box=$("movers");const L=S.products.filter(p=>p.trend&&p.trend.c30!=null);
+  if(!L.length){box.innerHTML='<div class="mempty">Trends appear once price history loads.</div>';return}
+  const up=L.filter(p=>p.trend.c30>=0.03).sort((a,b)=>b.trend.c30-a.trend.c30).slice(0,4);
+  const dn=L.filter(p=>p.trend.c30<=-0.03).sort((a,b)=>a.trend.c30-b.trend.c30).slice(0,4);
+  const row=p=>`<button type="button" class="mrow" data-id="${esc(p.id)}">${badge(p,"sm")}<span class="t"><b>${esc(p.set)}</b><small>${TLABEL[p.type]||p.type}</small></span><span class="num">${usd(p.market)}</span>${chip(p.trend.c30)}</button>`;
+  box.innerHTML=`<div class="mcol"><h3>Rising</h3>${up.length?up.map(row).join(""):'<div class="mempty">Nothing rising this month.</div>'}</div>
+    <div class="mcol"><h3>Falling</h3>${dn.length?dn.map(row).join(""):'<div class="mempty">Nothing falling this month.</div>'}</div>`;
+  box.querySelectorAll(".mrow").forEach(b=>b.addEventListener("click",()=>{const p=S.products.find(x=>x.id===b.dataset.id);if(!p)return;
+    S.type=p.type;S.id=p.id;renderAll();document.querySelector(".check").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"})}));
+}
 const num=v=>(v===""||v==null||isNaN(Number(v)))?null:Number(v);
 
 function byType(t){return S.products.filter(p=>p.type===t).sort((a,b)=>(b.order||0)-(a.order||0))}
@@ -231,6 +295,7 @@ function pick(id){S.id=id;closeSheet();renderSelect();renderCheck();renderRef()}
 function renderCheck(){
   const p=current();const price=num($("price").value);const pill=$("pill"),msg=$("vmsg");
   $("cmp").innerHTML="";$("bars").innerHTML="";
+  renderTrend(p);
   if(!p){pill.className="pill fair";pill.textContent="—";msg.textContent=S.products.length?"No product of this type for that set.":"Waiting for the price list.";return}
   const ref=p.market??p.online;
   if(price==null||price<=0){pill.className="pill fair";pill.textContent="Enter a price";msg.textContent=`${p.set} ${typeName(p.type)} · Market ${usd(p.market)}`;}
@@ -269,10 +334,10 @@ function renderRef(){
     g.innerHTML=`<h2>${t.name}</h2>`;
     const w=document.createElement("div");w.className="tbl";
     const rows=list.map(p=>{const m=p.market&&p.msrp?(p.market/p.msrp):null;
-      const cell=(f)=>S.editing?`<input aria-label="${f} price for ${p.set}" data-id="${p.id}" data-f="${f}" type="number" inputmode="decimal" step="0.01" value="${p[f]??""}">`:usd(p[f]);
+      const cell=(f)=>S.editing?`<input aria-label="${f} price for ${p.set}" data-id="${p.id}" data-f="${f}" type="number" inputmode="decimal" step="0.01" value="${p[f]??""}">`:usd0r(p[f]);
       return `<tr data-id="${p.id}" class="${p.id===S.id?"sel":""}"><td><div class="cell">${badge(p,"sm")}<div><span class="set">${p.set}</span><span class="rel">${p.released}${p.note?" · "+p.note:""}</span></div></div></td>
-        <td class="num">${usd(p.msrp)}</td><td class="num">${cell("online")}</td><td class="num">${cell("market")}</td><td class="num mult">${m?m.toFixed(1)+"×":"—"}</td></tr>`}).join("");
-    w.innerHTML=`<table><thead><tr><th>Set</th><th>MSRP</th><th>Online</th><th>Market</th><th>× MSRP</th></tr></thead><tbody>${rows}</tbody></table>`;
+        <td class="num">${usd0r(p.msrp)}</td><td class="num">${cell("online")}</td><td class="num">${cell("market")}</td><td class="num mult xm">${m?m.toFixed(1)+"×":"—"}</td><td class="num">${chip(p.trend&&p.trend.c30,true)}</td></tr>`}).join("");
+    w.innerHTML=`<table><thead><tr><th>Set</th><th>MSRP</th><th>Online</th><th>Market</th><th class="xm">× MSRP</th><th>30d</th></tr></thead><tbody>${rows}</tbody></table>`;
     g.appendChild(w);ref.appendChild(g)});
   ref.querySelectorAll("tbody tr").forEach(tr=>tr.addEventListener("click",e=>{if(e.target.tagName==="INPUT")return;
     const p=S.products.find(x=>x.id===tr.dataset.id);if(!p)return;S.type=p.type;S.id=p.id;renderAll();
@@ -287,7 +352,7 @@ function applyOv(){const o=loadOv();S.products=BASE.map(p=>Object.assign({},p,o[
 function save(inp){const o=loadOv();const id=inp.dataset.id;o[id]=Object.assign({},o[id],{[inp.dataset.f]:num(inp.value),updated:new Date().toISOString().slice(0,10)});
   if(saveOv(o)){applyOv();renderCheck();toast("Saved on this device")}else toast("Couldn't save. Your browser is blocking storage.")}
 let tt;function toast(t){const el=$("toast");el.textContent=t;el.hidden=false;clearTimeout(tt);tt=setTimeout(()=>el.hidden=true,1800)}
-function renderAll(){renderSeg();renderSelect();renderCheck();renderRef()}
+function renderAll(){renderSeg();renderSelect();renderCheck();renderRef();renderMovers()}
 
 $("setbtn").addEventListener("click",openSheet);
 $("sheet").addEventListener("click",e=>{if(e.target.closest("[data-close]"))closeSheet()});
